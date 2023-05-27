@@ -1,7 +1,7 @@
-import point
+from point import Point
 
 class Area(object):
-    def __init__(self, top_left: point.Point, bottom_right: point.Point, confidence: float):
+    def __init__(self, top_left: Point, bottom_right: Point, confidence: float):
         self.top_left = top_left
         self.bottom_right = bottom_right
         self.confidence = confidence
@@ -14,3 +14,4 @@ class Area(object):
     
     def __eq__(self, other) -> bool:
         return self.top_left == other.top_left
+    

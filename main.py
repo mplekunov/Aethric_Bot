@@ -1,17 +1,13 @@
-from ast import Set
 import threading
+
 import time
 
-import heapq
-
 from imageDetector import ImageDetector
+from areaPainter import AreaPainter
 
 import cv2
-import numpy as np
 
 import dxcam
-
-from areaPainter import AreaPainter
 
 def draw_image_identifiers(imageAreas):
     painter = AreaPainter("RenderWindow")

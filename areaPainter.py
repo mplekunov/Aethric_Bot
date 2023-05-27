@@ -53,3 +53,4 @@ class AreaPainter(object):
     def clean_window(self):
         hwnd = win32gui.FindWindow(self.window_name, None)        
         win32gui.InvalidateRect(hwnd, None, True)
+        

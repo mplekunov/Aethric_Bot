@@ -1,9 +1,10 @@
-
 import heapq
+
 from typing import List
 
 import cv2
 from cv2 import Mat
+
 import numpy as np
 
 from point import Point
@@ -28,16 +29,17 @@ class ImageDetector:
     def _filterImages(self, imageAreas) -> List[Area]:
         if len(imageAreas) == 0:
             return []        
-                        
+        # create heap that will store areas of each image
+        # all elements in the heap will be sorted by top_left Point in increasing order                        
         areaHeap = []
         for curr in imageAreas:
             heapq.heappush(areaHeap, curr)
         
+        # create list of unique areas with max confidence for specific area (including area overlaps)
         uniqueAreasWithMaxConfidence = []
         
         while len(areaHeap) > 0:
             curr: Area = areaHeap.pop()
-            # curr = (point, Point(point.x + width, point.y + height, point.confidence))
 
             if len(uniqueAreasWithMaxConfidence) == 0:
                 uniqueAreasWithMaxConfidence.append(curr)
@@ -51,7 +53,6 @@ class ImageDetector:
                     uniqueAreasWithMaxConfidence.append(curr)
                     
         return uniqueAreasWithMaxConfidence        
-        
     
     def detectImageAreas(self, targetImageMat: Mat, templateImageMat: Mat, threshold: float, useColors: bool) -> List[Area]:
         targetMat = targetImageMat.copy()
@@ -71,11 +72,11 @@ class ImageDetector:
         
         imageAreas = []
         
-        for pt in zip(*resultPointsMat[::-1]):
-            confidence = resultImagesMat[pt[1], pt[0]]
+        for point in zip(*resultPointsMat[::-1]):
+            confidence = resultImagesMat[point[1], point[0]]
 
-            top_left = Point(pt[0], pt[1])
-            bottom_right = Point(pt[0] + templateImageMat.shape[1], pt[1] + templateImageMat.shape[0])
+            top_left = Point(point[0], point[1])
+            bottom_right = Point(point[0] + templateImageMat.shape[1], point[1] + templateImageMat.shape[0])
             
             imageAreas.append(Area(top_left, bottom_right, confidence))
         

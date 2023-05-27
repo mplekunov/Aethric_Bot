@@ -1,55 +1,24 @@
-import threading
-from threading import Event
-from threading import Thread
+from typing import Dict
+from uuid import UUID
 
-import time
-from typing import List, Tuple
-
-from cv2 import Mat
+from camera import Camera
 
 from imageDetector import ImageDetector
 from areaPainter import AreaPainter
 
 import cv2
 
-import dxcam
-from dxcam import DXCamera
-
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import Label, filedialog
 
 from PIL import ImageTk, Image
 
+from objectFinder import ObjectTracker
+
 painter = AreaPainter("RenderWindow")
-
-def draw_image_borders(imageAreas):
-    painter.clean_window()
-    
-    threads = []
-    for area in imageAreas:            
-        thread = threading.Thread(None, lambda: painter.draw_border(area))
-        threads.append(thread)
-            
-        thread.start()       
-
-    for thread in threads:
-        thread.join() 
-        
-def process_frame(camera: DXCamera, templateImageMat: Mat, stop_flag: Event):
-    while not stop_flag.is_set(): 
-        frame = camera.get_latest_frame()
-
-        # Convert it from BGR(Blue, Green, Red) to
-        # RGB(Red, Green, Blue)
-        frameMat = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                
-        imageAreas = ImageDetector().detectImageAreas(frameMat, templateImageMat, 0.60, False)
-        draw_image_borders(imageAreas)
-    
-        time.sleep(1)
-            
-camera = dxcam.create()
-camera.start(target_fps=50)
+imageDetector = ImageDetector()
+camera = Camera()
+objectFinder = ObjectTracker(painter, imageDetector, camera)
 
 window = tk.Tk()
 window.title("Aethric Bot")
@@ -62,41 +31,36 @@ image_grid.pack(pady=10)
 # Keep track of the number of images added
 image_count = 0
 
-threads: List[Tuple[Thread, Event]] = []
+imageMap: Dict[UUID, Label] = {}
 
 # Function to handle button click event
-def button_click_remove_image(index):
-    # Destroy the image label and remove it from the grid
-    image_labels[index].destroy()
-        
-    (thread, stop_flag) = threads[index]
-            
-    stop_flag.set()
-    thread.join()
-    painter.clean_window()
+def button_click_remove_image(uuid):
+    global image_count
     
+    # Destroy the image label and remove it from the grid
     # Remove the reference to the image label
-    del image_labels[index]
+    imageMap.pop(uuid).destroy()
+    
+    objectFinder.stop_tracking(uuid) 
 
-# Create a list to store the image labels
-image_labels = []
+    image_count -= 1
 
 # Function to handle mouse hover event
-def on_enter(event, index):
+def on_enter(event, uid):
     # Create a circular red button
-    remove_button = tk.Button(image_labels[index], text="X", bg="red", fg="white", bd=0, relief="solid", width=2, command = lambda: button_click_remove_image(index))
+    remove_button = tk.Button(imageMap[uid], text="X", bg="red", fg="white", bd=0, relief="solid", width=2, command = lambda: button_click_remove_image(uid))
 
     # Position the button in the top right corner of the image label
     remove_button.place(x=0, y=0)
 
 # Function to handle mouse leave event
-def on_leave(event, index):
+def on_leave(event, uid):
     # Remove the circular red button when the mouse leaves the image label
-    for widget in image_labels[index].winfo_children():
+    for widget in imageMap[uid].winfo_children():
         widget.destroy()
 
 # Define a callback function for the button click event
-def button_click(camera: DXCamera):
+def button_click():
     global image_count
     
     if image_count >= 10:
@@ -108,15 +72,12 @@ def button_click(camera: DXCamera):
     if filepath:
         templateImageMat = cv2.imread(filepath)
 
-        stop_flag = Event()
-        thread = threading.Thread(None, lambda: process_frame(camera, templateImageMat, stop_flag))
-        threads.append((thread, stop_flag))
-        thread.start()
+        uid = objectFinder.track_object(templateImageMat, 1)
         
         # Convert the image to Tkinter PhotoImage format
         image = Image.open(filepath)
         
-        image = image.resize((64, 64), Image.ANTIALIAS)
+        image = image.resize((64, 64), Image.LANCZOS)
 
         photo = ImageTk.PhotoImage(image)
 
@@ -126,17 +87,17 @@ def button_click(camera: DXCamera):
         image_label.grid(row=image_count // 5, column=image_count % 5)
         
         # Bind mouse hover events to the image label
-        image_label.bind("<Enter>", lambda event, index=image_count: on_enter(event, index))
-        image_label.bind("<Leave>", lambda event, index=image_count: on_leave(event, index))
+        image_label.bind("<Enter>", lambda event, uid=uid: on_enter(event, uid))
+        image_label.bind("<Leave>", lambda event, uid=uid: on_leave(event, uid))
 
         # Add the image label to the list
-        image_labels.append(image_label)
+        imageMap[uid] = image_label
 
         # Increment the image count
         image_count += 1        
 
 # Create a button in the Tkinter window
-button = tk.Button(window, text="Select Image", command = lambda: button_click(camera), relief="solid", bd=2, padx=10, pady=5, borderwidth=2, font=("Arial", 12))
+button = tk.Button(window, text="Select Image", command=button_click, relief="solid", bd=2, padx=10, pady=5, borderwidth=2, font=("Arial", 12))
 button.pack(pady=10)
 
 # Set the button border to rounded
@@ -149,10 +110,5 @@ button.place(relx=0.5, rely=1, anchor="s")
 window.mainloop()
 
 # Clean up
-for (thread, stop_flag) in threads:
-    stop_flag.set()
-
-for (thread, stop_flag) in threads:
-    thread.join()
-
-camera.stop()
+for uid in imageMap.keys():
+    objectFinder.stop_tracking(uid)

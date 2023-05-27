@@ -18,7 +18,7 @@ class AreaPainter(object):
     def __init__(self, window_name):
         self.window_name = window_name
     
-    def draw_identifier(self, area: Area, border_width=1):
+    def draw_border(self, area: Area, border_width=1):
         hwnd = win32gui.FindWindow(self.window_name, None)
         dc = win32gui.GetWindowDC(hwnd)
 

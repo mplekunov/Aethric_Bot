@@ -1,6 +1,11 @@
 import threading
+from threading import Event
+from threading import Thread
 
 import time
+from typing import List, Tuple
+
+from cv2 import Mat
 
 from imageDetector import ImageDetector
 from areaPainter import AreaPainter
@@ -8,51 +13,67 @@ from areaPainter import AreaPainter
 import cv2
 
 import dxcam
+from dxcam import DXCamera
 
-def draw_image_identifiers(imageAreas):
+import tkinter as tk
+from tkinter import filedialog
+
+def draw_image_borders(imageAreas):
     painter = AreaPainter("RenderWindow")
     painter.clean_window()
     
     threads = []
     for area in imageAreas:            
-        thread = threading.Thread(None, lambda: painter.draw_identifier(area))
+        thread = threading.Thread(None, lambda: painter.draw_border(area))
         threads.append(thread)
             
         thread.start()       
 
     for thread in threads:
-        thread.join()    
-    
-# Create an Empty window
-cv2.namedWindow("Live", cv2.WINDOW_NORMAL)
- 
-# Resize this window
-cv2.resizeWindow("Live", 480, 270)
+        thread.join() 
+        
+def process_frame(camera: DXCamera, templateImageMat: Mat, stop_flag: Event):
+    while not stop_flag.is_set(): 
+        frame = camera.get_latest_frame()
 
+        # Convert it from BGR(Blue, Green, Red) to
+        # RGB(Red, Green, Blue)
+        frameMat = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                
+        imageAreas = ImageDetector().detectImageAreas(frameMat, templateImageMat, 0.60, False)
+        draw_image_borders(imageAreas)
+    
+        time.sleep(1)
+            
 camera = dxcam.create()
 camera.start(target_fps=50)
 
-while True: 
-    frame = camera.get_latest_frame()
- 
-    # Convert it from BGR(Blue, Green, Red) to
-    # RGB(Red, Green, Blue)
-    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    
-    templateImage = cv2.imread("template-cleaned.png")
-    imageAreas = ImageDetector().detectImageAreas(frame, templateImage, 0.60, False)
-     
-    draw_image_identifiers(imageAreas)
-    # Optional: Display the recording screen
-    # cv2.imshow('Live', resultImage)
-     
-    # Stop recording when we press 'q'
-    if cv2.waitKey(1) == ord('q'):
-        break
-    
-    time.sleep(1)
-    
-camera.stop()
+window = tk.Tk()
+window.title("Aethric Bot")
+window.geometry("640x480")
 
-# Destroy all windows
-cv2.destroyAllWindows()
+threads: List[Tuple[Thread, Event]] = []
+
+# Define a callback function for the button click event
+def button_click(camera: DXCamera):
+    # Open a file chooser dialog and allow the user to select image files
+    filepath = filedialog.askopenfilename(filetypes=[("Image File", "*.jpg;*.jpeg;*.png")])
+    templateImageMat = cv2.imread(filepath)
+
+    stop_flag = Event()
+    thread = threading.Thread(None, lambda: process_frame(camera, templateImageMat, stop_flag))
+    threads.append((thread, stop_flag))
+    thread.start()
+
+# Create a button in the Tkinter window
+button = tk.Button(window, text = "Select Images", command = lambda: button_click(camera))
+button.pack()
+
+window.mainloop()
+
+# Clean up
+for (thread, stop_flag) in threads:
+    stop_flag.set()
+    thread.join()
+
+camera.stop()

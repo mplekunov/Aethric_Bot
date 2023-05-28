@@ -1,4 +1,4 @@
-from point import Point
+from classes.point import Point
 
 class Area(object):
     def __init__(self, top_left: Point, bottom_right: Point, confidence: float):

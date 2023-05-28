@@ -7,8 +7,8 @@ from cv2 import Mat
 
 import numpy as np
 
-from point import Point
-from area import Area
+from classes.point import Point
+from classes.area import Area
 
 class ImageDetector:
     def _is_overlap(self, a: Area, b: Area) -> bool:

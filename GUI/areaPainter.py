@@ -4,7 +4,7 @@ import win32api
 
 import ctypes
 
-from area import Area
+from classes.area import Area
 
 class BLENDFUNCTION(ctypes.Structure):
     _fields_ = [

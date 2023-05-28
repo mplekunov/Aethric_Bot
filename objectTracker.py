@@ -1,15 +1,17 @@
-from threading import Event, Thread
+from threading import Thread
+
 import time
-from typing import Any, Dict, List, Tuple, Type, TypeAlias
+
+from typing import Dict, List, Tuple, Type
+
 import cv2
 
 from numpy import dtype, generic, ndarray
-from area import Area
-from areaPainter import AreaPainter
+from GUI.areaPainter import AreaPainter
 
 import uuid
 from uuid import UUID
-from camera import Camera
+from classes.camera import Camera
 
 from imageDetector import ImageDetector
 
@@ -67,4 +69,18 @@ class ObjectTracker(object):
         thread.join()
         
         self.painter.clean_window()
+    
+    def cleanup(self):
+          # Stop all running threads and perform cleanup
+        keys_to_remove = []
+        
+        for uid in self._threadMap.keys():
+            keys_to_remove.append(uid)
+        
+        for uid in keys_to_remove:
+            self.stop_tracking(uid)
             
+    def __del__(self):
+        self.cleanup()
+
+    

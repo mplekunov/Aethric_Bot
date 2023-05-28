@@ -1,4 +1,5 @@
 import heapq
+import time
 
 from typing import List
 
@@ -26,9 +27,10 @@ class ImageDetector:
             
             return True
     
-    def _filterImages(self, imageAreas) -> List[Area]:
+    def _filterImages(self, imageAreas: List[Area]) -> List[Area]:
         if len(imageAreas) == 0:
             return []        
+        
         # create heap that will store areas of each image
         # all elements in the heap will be sorted by top_left Point in increasing order                        
         areaHeap = []
@@ -55,6 +57,10 @@ class ImageDetector:
         return uniqueAreasWithMaxConfidence        
     
     def detectImageAreas(self, targetImageMat: Mat, templateImageMat: Mat, threshold: float, useColors: bool) -> List[Area]:
+        if targetImageMat is None or templateImageMat is None:
+            # Handle the case where targetImageMat is None
+            return []
+        
         targetMat = targetImageMat.copy()
         templateMat = templateImageMat.copy()
 
@@ -70,7 +76,7 @@ class ImageDetector:
 
         resultPointsMat = np.where(resultImagesMat >= threshold)
         
-        imageAreas = []
+        imageAreas: List[Area] = []
         
         for point in zip(*resultPointsMat[::-1]):
             confidence = resultImagesMat[point[1], point[0]]
@@ -80,7 +86,7 @@ class ImageDetector:
             
             imageAreas.append(Area(top_left, bottom_right, confidence))
         
-        filteredImageAreas = self._filterImages(imageAreas)
-             
-        return filteredImageAreas
+        # filteredImageAreas = self._filterImages(imageAreas)
+        return imageAreas
+        # return filteredImageAreas
     

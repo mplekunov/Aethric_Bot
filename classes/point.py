@@ -7,7 +7,10 @@ class Point(object):
         return f'({self.x}, {self.y})'
 
     def __lt__(self, other):
-        return self.x < other.x and self.y <= other.y
+        if self.x <= other.x and self.y <= other.y:
+            return True
+        
+        return False
     
     def __eq__(self, other) -> bool:
         return self.x == other.x and self.y == other.y

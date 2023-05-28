@@ -16,7 +16,7 @@ class Interface(object):
         self._window.title("Aethric Bot")
         self._window.geometry("640x480")
 
-        self._image_grid = ImageGrid(self._window)
+        self._image_grid = ImageGrid(self._window, tracker)
 
         # Create a button in the Tkinter window
         button = Button(self._window, text="Select Image", command= lambda: self._button_click(tracker), relief="solid", bd=2, padx=10, pady=5, borderwidth=2, font=("Arial", 12))

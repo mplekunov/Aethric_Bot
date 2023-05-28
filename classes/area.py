@@ -10,7 +10,7 @@ class Area(object):
         return f'{self.top_left}, {self.bottom_right}'
     
     def __lt__(self, other):
-        return self.top_left < other.top_left
+        return self.top_left < other.top_left or self.top_left == other.top_left
     
     def __eq__(self, other) -> bool:
         return self.top_left == other.top_left

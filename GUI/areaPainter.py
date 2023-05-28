@@ -18,7 +18,7 @@ class AreaPainter(object):
     def __init__(self, window_name):
         self.window_name = window_name
     
-    def draw_border(self, area: Area, border_width=1):
+    def draw_border(self, area: Area, border_width=1, includeConfidence: bool = True):
         hwnd = win32gui.FindWindow(self.window_name, None)
         dc = win32gui.GetWindowDC(hwnd)
 
@@ -44,7 +44,8 @@ class AreaPainter(object):
         rect = (area.top_left.x, area.top_left.y, area.bottom_right.x, area.bottom_right.y)
         win32gui.FrameRect(dc, rect, pen)
 
-        win32gui.DrawText(dc, "{:.2f}".format(area.confidence), -1, rect, win32con.DT_LEFT | win32con.DT_LEFT | win32con.DT_SINGLELINE)
+        if includeConfidence:
+            win32gui.DrawText(dc, "{:.2f}".format(area.confidence), -1, rect, win32con.DT_LEFT | win32con.DT_LEFT | win32con.DT_SINGLELINE)
 
         # Cleanup
         win32gui.DeleteObject(pen)

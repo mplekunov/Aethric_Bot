@@ -8,17 +8,17 @@ from PIL import ImageTk
 from objectTracker import ObjectTracker
 
 class ImageGrid(object):
-    def __init__(self, window: Tk):
+    def __init__(self, window: Tk, tracker: ObjectTracker):
         self._imageMap: Dict[UUID, Label] = {}        
         self._image_count = 0
 
         self._image_grid = Frame(window)
         self._image_grid.pack(pady=10)
+        
+        self._tracker = tracker
     
     # Function to handle button click event
-    def _button_click_remove_image(self, uuid, tracker: ObjectTracker):
-        self._image_count
-    
+    def _button_click_remove_image(self, uuid, tracker: ObjectTracker):    
         # Destroy the image label and remove it from the grid
         # Remove the reference to the image label
         self._imageMap.pop(uuid).destroy()
@@ -30,7 +30,7 @@ class ImageGrid(object):
     # Function to handle mouse hover event
     def _on_enter(self, event, uid):
         # Create a circular red button
-        remove_button = Button(self._imageMap[uid], text="X", bg="red", fg="white", bd=0, relief="solid", width=2, command = lambda: self._button_click_remove_image(uid))
+        remove_button = Button(self._imageMap[uid], text="X", bg="red", fg="white", bd=0, relief="solid", width=2, command = lambda: self._button_click_remove_image(uid, self._tracker))
 
         # Position the button in the top right corner of the image label
         remove_button.place(x=0, y=0)
